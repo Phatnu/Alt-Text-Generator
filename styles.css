@@ -349,6 +349,11 @@ textarea::placeholder, input::placeholder { color: var(--muted); }
 }
 .colophon { margin-top: 40px; padding-top: 22px; border-top: 1px solid var(--line); max-width: 74ch; }
 .colophon p { font-size: 13px; color: var(--muted); margin: 0 0 10px; }
+.colophon .credit {
+  margin: 18px 0 0; padding-top: 14px; border-top: 1px solid var(--line);
+  font-family: var(--serif); font-size: 14.5px; color: var(--ink-2);
+}
+.colophon .credit strong { font-weight: 600; color: var(--ink); }
 
 /* ── badges & buttons ─────────────────────────────────────────────────── */
 .badge {
