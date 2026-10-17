@@ -3,7 +3,10 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Alt Text Generator — Insert images, get alt tags</title>
+<title>Alt Text Studio — write alt text for your images</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Space+Grotesk:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" />
 <link rel="stylesheet" href="styles.css" />
 <script>
 (function () {
@@ -16,87 +19,136 @@
 </script>
 </head>
 <body>
-<div class="wrap">
-  <header class="reveal">
-    <div class="topbar">
-      <span class="eyebrow">100% client-side · no upload to server</span>
-      <button class="theme-toggle" id="themeToggle" type="button" aria-label="Toggle dark mode">◐ Dark</button>
-    </div>
-    <h1>Insert images, get alt text.</h1>
-    <p class="lead">Select up to 10 files. Images are auto-compressed to ≤300KB in your browser (JPG or PNG only), then the caption model writes an <kbd>alt</kbd> attribute for each. Downloads are renamed from the alt text and bundled with an HTML / CSV manifest.</p>
-  </header>
 
-  <div class="grid">
-    <section class="card reveal" style="--index:0">
-      <h2>1 · Insert images <span id="modelBadge" class="badge idle" style="margin-left:8px">model: not loaded</span></h2>
-      <div class="drop" id="drop">
-        <div style="font-size:14px;color:var(--ink)">Drop up to 10 images here or click to browse</div>
-        <div style="font-size:13px;color:var(--muted)">PNG · JPG · auto-compressed to ≤300KB · downloads as JPG or PNG only</div>
+<header class="masthead">
+  <a class="wordmark" href="./">Alt<span>Text</span>Studio</a>
+  <div class="masthead-right">
+    <span class="privacy"><span class="dot" aria-hidden="true"></span> Runs in your browser — nothing is uploaded</span>
+    <span id="modelBadge" class="badge idle">model not loaded</span>
+    <button class="iconbtn" id="themeToggle" type="button" aria-label="Switch to dark mode">
+      <svg class="i-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/></svg>
+      <svg class="i-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>
+    </button>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <h1>Every image<br />needs a sentence.</h1>
+    <div class="hero-body">
+      <p class="lede">Drop in your pictures and get a written <code>alt</code> attribute for each one. A captioning model runs on your own device, then everything is bundled with a manifest you can ship.</p>
+      <p class="hero-note">Files are compressed to 300&nbsp;KB and downloaded as JPG or PNG only.</p>
+    </div>
+  </section>
+
+  <div class="workspace">
+
+    <!-- ── Light table ─────────────────────────────────────────── -->
+    <section class="lightbox" aria-label="Images">
+      <div class="section-head">
+        <h2>Light table</h2>
+        <span class="count" id="fileMeta">0 of 10</span>
+      </div>
+
+      <div class="drop" id="drop" role="button" tabindex="0">
+        <svg class="drop-icon" viewBox="0 0 48 48" aria-hidden="true">
+          <rect x="6" y="10" width="36" height="28" rx="3" />
+          <circle cx="17" cy="20" r="3.2" />
+          <path d="M9 34l9-9 6 6 5-5 10 8" />
+        </svg>
+        <div class="drop-title">Drop images here, or <u>browse</u></div>
+        <div class="drop-sub">PNG or JPG, up to 10 files</div>
         <input type="file" id="file" accept="image/*" multiple />
       </div>
 
-      <div class="meta" id="fileMeta">0 / 10 images</div>
-      <div class="queue" id="queue"></div>
-
-      <label class="small" for="url">Or load from URL (same-origin / CORS-enabled only)</label>
-      <div style="display:flex;gap:8px">
-        <input type="text" id="url" placeholder="https://…" />
-        <button class="ghost" id="loadUrl">Add</button>
+      <div class="urlrow">
+        <input type="text" id="url" placeholder="…or paste an image URL (CORS-enabled)" />
+        <button class="btn" id="loadUrl" type="button">Adds</button>
       </div>
 
-      <div class="row">
-        <button class="primary" id="genBtn" disabled>Generate all alt text</button>
-        <button class="ghost" id="clearBtn">Clear all</button>
-      </div>
-      <div class="status" id="status">Choose images to begin.</div>
+      <div class="sheet" id="queue"></div>
     </section>
 
-    <section class="card reveal" style="--index:1">
-      <h2>2 · Copy &amp; download <span id="selLabel" class="meta" style="margin:0 0 0 8px;text-transform:none;letter-spacing:0"></span></h2>
-      <label class="small" for="alt">Alt text — selected image (editable)</label>
+    <!-- ── Caption desk ────────────────────────────────────────── -->
+    <aside class="desk" aria-label="Caption desk">
+      <div class="section-head">
+        <h2>Caption desk</h2>
+        <span class="count" id="selLabel"></span>
+      </div>
+
+      <div class="preview" id="preview" hidden>
+        <img id="previewImg" alt="" />
+      </div>
+      <div class="preview empty" id="previewEmpty">Select an image to write its caption.</div>
+
+      <label class="field-label" for="alt">Alt text</label>
       <div class="field-wrap">
-        <textarea id="alt" placeholder="Select an image to view / edit its alt text…"></textarea>
-        <button class="inline-copy" id="copyAltInline" type="button" title="Copy alt text" aria-label="Copy alt text">⧉</button>
+        <textarea id="alt" placeholder="Alt text appears here the moment you add an image…" spellcheck="true"></textarea>
+        <button class="inline-copy" id="copyAltInline" type="button" aria-label="Copy alt text">copy</button>
       </div>
-      <div class="meta"><span id="count">0 characters</span><span>·</span><span>aim for 80–140 characters</span></div>
+      <div class="field-meta">
+        <span id="count">0 characters</span>
+        <span class="hint">Aim for 80–140 characters. Describe what matters.</span>
+      </div>
 
-      <label class="small" for="title">Title text — selected image (editable, auto-filled)</label>
+      <label class="field-label" for="title">Title</label>
       <div class="field-wrap">
-        <input type="text" id="title" placeholder="Title will appear here — used in HTML title + exports…" />
-        <button class="inline-copy over-input" id="copyTitleInline" type="button" title="Copy title" aria-label="Copy title">⧉</button>
+        <input type="text" id="title" placeholder="Used alongside the alt text…" />
+        <button class="inline-copy over-input" id="copyTitleInline" type="button" aria-label="Copy title">copy</button>
       </div>
-      <div class="meta" id="sizeInfo"></div>
+      <div class="field-meta"><span id="sizeInfo"></span></div>
 
-      <label class="small">HTML snippet — selected (alt + title)</label>
-      <div class="code" id="snippet">&lt;img src="" alt="" title="" /&gt;</div>
+      <label class="field-label">HTML</label>
+      <pre class="code" id="snippet">&lt;img src="" alt="" title="" /&gt;</pre>
 
-      <div class="row">
-        <button class="primary" id="copyAlt">Copy alt text</button>
-        <button class="ghost" id="copyTitle">Copy title</button>
-        <button class="ghost" id="copyHtml">Copy HTML</button>
-        <button class="ghost" id="dlOne">Download image</button>
+      <div class="actions">
+        <button class="btn primary" id="copyHtml" type="button">Copy HTML</button>
+        <button class="btn" id="copyAlt" type="button">Copy alt</button>
+        <button class="btn" id="copyTitle" type="button">Copy title</button>
+        <button class="btn" id="dlOne" type="button">Download image</button>
       </div>
 
-      <label class="small">Batch results (<span id="doneCount">0</span> done)</label>
+      <hr class="rule" />
+
+      <div class="section-head">
+        <h2>Batch</h2>
+        <span class="count" id="doneCount">0 done</span>
+      </div>
+
+      <div class="controls">
+        <button class="btn primary" id="genBtn" type="button" disabled>Caption all</button>
+        <button class="btn ghost" id="clearBtn" type="button">Clear</button>
+        <label class="inline-field" for="backend">Compute
+          <select id="backend" title="Where captioning runs. Auto tries the GPU first.">
+            <option value="auto">Auto</option>
+            <option value="gpu">GPU</option>
+            <option value="cpu">CPU</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="progress" role="progressbar" aria-label="Captioning progress"><div class="progress-bar" id="progressBar"></div></div>
       <div class="batch" id="batchList"></div>
-      <div class="row">
-        <button class="ghost" id="copyAllAlt">Copy all alt text</button>
-        <button class="ghost" id="copyAllTitle">Copy all titles</button>
-        <button class="ghost" id="copyAllHtml">Copy all HTML</button>
-      </div>
-      <div class="row">
-        <button class="primary" id="dlAll">Download all (.zip ≤300KB each)</button>
-        <button class="ghost" id="dlManifest">Download manifest (.html)</button>
-      </div>
 
-      <div class="foot">
-        Model: <span style="font-family:var(--mono)">Xenova/vit-gpt2-image-captioning</span> via Transformers.js.
-        First run downloads ~500MB once, then caches in browser.
-        Images are compressed one-by-one in the browser to ≤300KB (JPG for photos, PNG only when transparency is detected). ZIP contains renamed images + HTML/CSV manifest with alt + title.
+      <div class="actions">
+        <button class="btn" id="copyAllAlt" type="button">Copy all alt</button>
+        <button class="btn" id="copyAllTitle" type="button">Copy all titles</button>
+        <button class="btn" id="copyAllHtml" type="button">Copy all HTML</button>
       </div>
-    </section>
+      <div class="actions">
+        <button class="btn primary" id="dlAll" type="button">Download all (.zip)</button>
+        <button class="btn" id="dlManifest" type="button">Manifest (.html)</button>
+      </div>
+    </aside>
   </div>
-</div>
+
+  <div class="console" id="status" role="status" aria-live="polite">Choose images to begin.</div>
+
+  <footer class="colophon">
+    <p>Captions are generated by <span class="mono">Xenova/vit-gpt2-image-captioning</span> running locally through Transformers.js. It uses your GPU when one is available and falls back to the CPU. The first run downloads the model once, then the browser caches it — serve this page over <span class="mono">http://localhost</span> so that cache can be used.</p>
+    <p>Always read the captions before you ship them. A machine can describe an image; only you know what it is for.</p>
+  </footer>
+</main>
 
 <script type="module" src="./script.js"></script>
 </body>
